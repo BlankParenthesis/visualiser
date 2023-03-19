@@ -1,0 +1,19 @@
+[package]
+name = "wmantle"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wayland-client = "0.30.0"
+vulkano = "0.32.0"
+pipewire = "0.6.0"
+tempfile = "3.3.0"
+wayland-protocols = { version = "0.30.0", features = ["client"] }
+wayland-backend = { version = "0.1.0", features = ["client_system"] }
+ahash = "0.8.3"
+futures = "0.3.26"
+libspa-sys = "0.6.0"
+rustfft = "6.1.0"
+enterpolation = { path = "../enterpolation" }
