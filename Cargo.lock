@@ -858,6 +858,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 
 [[package]]
+name = "soa_derive"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "327b898354ca1a9e0386aa10b19f684d181ae273c0e8ce9ad22464e9fbe39322"
+dependencies = [
+ "soa_derive_internal",
+]
+
+[[package]]
+name = "soa_derive_internal"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7bcbaa3dd35156733d6754fa463a6852a51652deb71490e4c2b67b8c8f5535a9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1199,6 +1219,7 @@ dependencies = [
  "libspa-sys",
  "pipewire",
  "rustfft",
+ "soa_derive",
  "tempfile",
  "vulkano",
  "wayland-backend",

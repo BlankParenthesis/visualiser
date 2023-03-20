@@ -212,7 +212,7 @@ impl Dispatch<XdgToplevel, ()> for Window {
 			if width == 0 && height == 0 => {
 				if !state.configured {
 					// TODO: do the configuring
-					state.graphics_state.as_mut().unwrap().graphics.draw(&[0.0; BUFFER_SIZE]);
+					state.graphics_state.as_mut().unwrap().graphics.draw(Some(Box::new([0.0; BUFFER_SIZE])));
 					println!("configure");
 					state.configured = true;
 				} else {
@@ -250,9 +250,7 @@ impl Dispatch<WlCallback, ()> for Window {
 			let data = state.visualiser.write().unwrap()
 				.fft_interval(interval);
 
-			if let Some(data) = data {
-				state.graphics_state.as_mut().unwrap().graphics.draw(&data);
-			}
+			state.graphics_state.as_mut().unwrap().graphics.draw(data);
 		} else {
 			unreachable!("callback can only call done");
 		}

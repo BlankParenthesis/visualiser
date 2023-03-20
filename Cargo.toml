@@ -17,3 +17,4 @@ futures = "0.3.26"
 libspa-sys = "0.6.0"
 rustfft = "6.1.0"
 enterpolation = { path = "../enterpolation" }
+soa_derive = "0.12.0"
