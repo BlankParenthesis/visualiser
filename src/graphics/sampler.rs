@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use vulkano::{image::{StorageImage, ImageDimensions, view::ImageView}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, sampler::{Sampler as VkSampler, SamplerCreateInfo}, format::Format, buffer::{BufferUsage, CpuAccessibleBuffer}, command_buffer::CopyBufferToImageInfo, pipeline::{GraphicsPipeline, Pipeline}};
+use vulkano::{image::{StorageImage, ImageDimensions, view::ImageView}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, sampler::{Sampler as VkSampler, SamplerCreateInfo, SamplerAddressMode, Filter}, format::Format, buffer::{BufferUsage, CpuAccessibleBuffer}, command_buffer::CopyBufferToImageInfo, pipeline::{GraphicsPipeline, Pipeline}};
 
 use crate::BUFFER_SIZE;
 
@@ -38,7 +38,13 @@ impl Sampler {
 
 		let sampler = VkSampler::new(
 			device.into(),
-			SamplerCreateInfo::simple_repeat_linear_no_mipmap()
+			SamplerCreateInfo {
+				mag_filter: Filter::Linear,
+				min_filter: Filter::Linear,
+				address_mode: [SamplerAddressMode::ClampToEdge; 3],
+				lod: 0.0..=1.0,
+				..Default::default()
+			}
 		).unwrap();
 
 		Self { sampler, buffer, image_view }
