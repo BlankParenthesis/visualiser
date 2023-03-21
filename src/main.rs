@@ -8,7 +8,7 @@ use std::sync::{Arc, RwLock};
 use window::Window;
 use visualiser::BufferManager;
 
-const BUFFER_SIZE: usize = 100;
+const BUFFER_SIZE: usize = 256;
 
 fn main() {
 	let buffer_manager = Arc::new(RwLock::new(BufferManager::default()));

@@ -76,7 +76,7 @@ impl Window {
 		toplevel.set_title("hey, red".into());
 		toplevel.set_app_id("wmantle".into());
 		
-		let graphics = Graphics::new(&self.display, base_surface, [320, 240]);
+		let graphics = Graphics::new(&self.display, base_surface, [600, 400]);
 
 		base_surface.commit();
 		base_surface.frame(queue_handle, ());

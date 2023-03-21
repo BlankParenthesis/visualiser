@@ -32,72 +32,124 @@ impl AudioBuffer {
 	}
 }
 
+struct FftCache {
+	algorithm: Radix4<f32>,
+	window: Box<[f32]>,
+	scaling_factor: f32,
+}
+
 #[derive(Default)]
 pub(crate) struct BufferManager {
 	buffers: VecDeque<AudioBuffer>,
 	/// key is the power to raise 2 to for the radix size
-	ffts: HashMap<u8, Radix4<f32>>,
+	ffts: HashMap<u8, FftCache>,
+	flip: bool,
+}
+
+struct BufferSlice {
+	values: Vec<f32>,
+	rate: f32,
 }
 
 impl BufferManager {
-	fn take_next(&mut self, mut interval: Duration) -> Vec<f32> {
+	fn take_next(&mut self, interval: Duration) -> BufferSlice {
 		let mut values = Vec::new();
 		let mut buffers_taken = 0;
+		let mut rate = 0.0;
+		let mut remaining_interval = interval;
+		let interval = interval.as_secs_f32();
 
 		for buffer in &mut self.buffers {
-			let (slice, elapsed) = buffer.read(interval);
+			let buffer_rate = buffer.rate;
+			let (slice, elapsed) = buffer.read(remaining_interval);
+
+			rate += buffer_rate * elapsed.as_secs_f32() / interval;
 
 			values.extend_from_slice(slice);
-			interval = interval.saturating_sub(elapsed);
+			remaining_interval = remaining_interval.saturating_sub(elapsed);
 
 			// why not is_zero?: because floating point imprecision and rounding
-			if interval.as_millis() < 1 {
+			if remaining_interval.as_millis() < 1 {
 				break;
 			}
 
 			buffers_taken += 1;
 		}
 
+		// to account for any remaining time, scale up the existing rate
+		let total_elapsed = interval - remaining_interval.as_secs_f32();
+		rate /= total_elapsed / interval;
+
 		self.buffers.drain(0..buffers_taken);
 
-		values
+		BufferSlice { values, rate }
 	}
 
 	pub fn fft_interval<const T: usize>(
 		&mut self,
 		interval: Duration,
 	) -> Option<Box<[f32; T]>> {
-		let data = self.take_next(interval);
+		let BufferSlice { values, rate } = self.take_next(interval);
 
-		if data.len() < 2 {
+		if values.len() < 2 {
 			return None;
 		}
 
-		let power_of_2 = f32::log2(data.len() as f32).floor() as u32;
+		let power_of_2 = f32::log2(values.len() as f32).floor() as u32;
 		let size = 2_u32.pow(power_of_2) as usize;
 
 		let fft = self.ffts.entry(power_of_2 as u8).or_insert_with(|| {
-			println!("creating fft of size {}", size);
-			Radix4::new(size, FftDirection::Forward)
+			FftCache {
+				algorithm: Radix4::new(size, FftDirection::Forward),
+				window: apodize::hamming_iter(size).map(|v| v as f32).collect(),
+				scaling_factor: (size as f32).sqrt(),
+			}
 		});
 
-		let mut truncated_data = data[0..size].iter()
+		let mut truncated_data = values[0..size].iter()
 			.cloned()
-			.map(|re| Complex { re, im: 0.0 })
+			.zip(fft.window.iter())
+			.map(|(val, scale)| Complex { re: val * scale, im: 0.0 })
 			.collect::<Vec<_>>();
 
-		fft.process(truncated_data.as_mut_slice());
+		fft.algorithm.process(truncated_data.as_mut_slice());
+
+		// NOTE: taking anything > rate/2 results in Hermitian symmetry
+		const TARGET_MAX_FREQUENCY: f32 = 15_000.0;
+		let frequency_ratio = TARGET_MAX_FREQUENCY / rate;
+		let max_index = usize::min(size, (size as f32 * frequency_ratio) as usize);
+
+		if max_index < 2 {
+			// enterpolation needs at least two values
+			return None;
+		}
+		
+		fn power_range(base: f32, count: usize) -> Box<[f32]> {
+			let power_data = (0..(count - 1))
+				.map(|power| 1.0 - 1.0 / base.powf(power as f32));
+
+			[0.0].into_iter().chain(power_data).collect()
+		}
+
+		const SCALE_POWER_BASE: f32 = 1.02;
 
 		Some(Linear::builder()
-			.elements(truncated_data)
-			.equidistant::<f32>()
-			.normalized()
+			.elements(&truncated_data[0..max_index])
+			.knots(power_range(SCALE_POWER_BASE, max_index).as_ref())
+			//.equidistant::<f32>()
+			//.normalized()
 			.build()
 			.unwrap()
 			.take(T)
-			.map(|Complex { re, .. }| re)
-			.collect::<Vec<_>>()
-			.into_boxed_slice()
+			.map(|Complex { re, im }| {
+				let power = f32::sqrt(re * re + im * im);
+				let value = power / fft.scaling_factor;
+				let log_scale = f32::log10(1.0 + value);
+				
+				const SCALE: f32 = 1.0;
+				log_scale * SCALE
+			})
+			.collect::<Box<_>>()
 			.try_into().unwrap())
 	}
 
