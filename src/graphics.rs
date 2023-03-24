@@ -48,7 +48,8 @@ unsafe impl SpecializationConstants for ShaderSpecializations {
 
 impl Graphics {
 	fn instance() -> Arc<Instance> {
-		let library = VulkanLibrary::new().expect("Failed to load vulkan library");
+		let library = VulkanLibrary::new()
+			.expect("Failed to load vulkan library");
 
 		Instance::new(
 			library,

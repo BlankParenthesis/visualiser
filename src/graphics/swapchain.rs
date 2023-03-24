@@ -1,16 +1,13 @@
 use std::sync::Arc;
 
-use vulkano::command_buffer::{PrimaryAutoCommandBuffer, AutoCommandBufferBuilder, CommandBufferUsage, CopyBufferToImageInfo, RenderingAttachmentInfo, RenderingInfo};
-use vulkano::command_buffer::allocator::{StandardCommandBufferAlloc, StandardCommandBufferAllocator};
-use vulkano::device::Queue;
+use vulkano::command_buffer::*;
+use vulkano::command_buffer::allocator::StandardCommandBufferAlloc;
 use vulkano::image::{ImageUsage, ImageAccess};
 use vulkano::image::{view::ImageView, SwapchainImage};
-use vulkano::memory::allocator::StandardMemoryAllocator;
 use vulkano::pipeline::PipelineBindPoint;
-use vulkano::pipeline::{GraphicsPipeline, graphics::viewport::Viewport};
+use vulkano::pipeline::graphics::viewport::Viewport;
 use vulkano::render_pass::{LoadOp, StoreOp};
 use vulkano::swapchain::{Swapchain as VkSwapchain, SwapchainCreateInfo, SwapchainPresentInfo, SwapchainAcquireFuture};
-use vulkano::sync::{GpuFuture, FlushError};
 
 use super::pipeline::Pipeline;
 use super::surface::Surface;

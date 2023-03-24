@@ -73,7 +73,7 @@ impl Window {
 
 		let xdg_surface = wm_base.get_xdg_surface(base_surface, queue_handle, ());
 		let toplevel = xdg_surface.get_toplevel(queue_handle, ());
-		toplevel.set_title("hey, red".into());
+		toplevel.set_title("Visualiser".into());
 		toplevel.set_app_id("wmantle".into());
 		
 		let graphics = Graphics::new(&self.display, base_surface, [600, 400]);
@@ -98,7 +98,6 @@ impl Dispatch<WlRegistry, ()> for Window {
 		_conn: &Connection,
 		queue_handle: &QueueHandle<Self>,
 	) {
-		//println!("{:?}", event);
 		match event {
 			wl_registry::Event::Global { name, interface, version }
 			if interface.as_str() == "wl_compositor" => {
@@ -126,7 +125,7 @@ impl Dispatch<WlRegistry, ()> for Window {
 					state.init_xdg_surface(queue_handle);
 				}
 			},
-			_ => (),
+			_ => {},
 		}
 	}
 }
@@ -135,12 +134,12 @@ impl Dispatch<WlCompositor, ()> for Window {
 	fn event(
 		_: &mut Self,
 		_: &WlCompositor,
-		_: wl_compositor::Event,
+		event: wl_compositor::Event,
 		_: &(),
 		_: &Connection,
 		_: &QueueHandle<Self>,
 	) {
-		unreachable!("wl_compositor has no events")
+		unimplemented!("wl_compositor unknown event: {:?}", event)
 	}
 }
 
@@ -148,13 +147,11 @@ impl Dispatch<WlSurface, ()> for Window {
 	fn event(
 		_: &mut Self,
 		_: &WlSurface,
-		event: wl_surface::Event,
+		_: wl_surface::Event,
 		_: &(),
 		_: &Connection,
 		_: &QueueHandle<Self>,
-	) {
-		todo!("{:?}", event)
-	}
+	) {}
 }
 
 impl Dispatch<XdgWmBase, ()> for Window {
@@ -170,7 +167,7 @@ impl Dispatch<XdgWmBase, ()> for Window {
 			xdg_wm_base::Event::Ping { serial } => {
 				base.send_request(xdg_wm_base::Request::Pong { serial }).unwrap();
 			},
-			_ => todo!("{:?}", event)
+			event => unimplemented!("xdg_wm_base unknown event: {:?}", event)
 		}
 	}
 }
@@ -190,7 +187,7 @@ impl Dispatch<XdgSurface, ()> for Window {
 				// TODO: actually configure
 				surface.send_request(xdg_surface::Request::AckConfigure { serial }).unwrap()
 			},
-			_ => todo!("{:?}", event),
+			event => unimplemented!("xdg_wm_base unknown event: {:?}", event)
 		}
 	}
 }
@@ -226,7 +223,8 @@ impl Dispatch<XdgToplevel, ()> for Window {
 			xdg_toplevel::Event::Close => {
 				state.running = false;
 			},
-			_ => todo!("{:?}", event),
+			xdg_toplevel::Event::WmCapabilities { capabilities: _ } => {},
+			event => unimplemented!("xdg_toplevel unknown event: {:?}", event)
 		}
 	}
 }
@@ -240,19 +238,20 @@ impl Dispatch<WlCallback, ()> for Window {
 		_: &Connection,
 		queue_handle: &QueueHandle<Self>,
 	) {
-		if let wl_callback::Event::Done { callback_data } = event {
-			let surface = state.base_surface.as_ref().unwrap();
-			let interval = Duration::from_millis((callback_data - state.last_frame) as u64);
-			state.last_frame = callback_data;
-			
-			surface.frame(queue_handle, ());
+		match event {
+			wl_callback::Event::Done { callback_data } => {
+				let surface = state.base_surface.as_ref().unwrap();
+				let interval = Duration::from_millis((callback_data - state.last_frame) as u64);
+				state.last_frame = callback_data;
+				
+				surface.frame(queue_handle, ());
 
-			let data = state.visualiser.write().unwrap()
-				.fft_interval(interval);
+				let data = state.visualiser.write().unwrap()
+					.fft_interval(interval);
 
-			state.graphics_state.as_mut().unwrap().graphics.draw(data);
-		} else {
-			unreachable!("callback can only call done");
+				state.graphics_state.as_mut().unwrap().graphics.draw(data);
+			},
+			event => unimplemented!("wl_callback unknown event: {:?}", event)
 		}
 	}
 }
@@ -261,11 +260,11 @@ impl Dispatch<WlRegion, ()> for Window {
 	fn event(
 		_: &mut Self,
 		_: &WlRegion,
-		_: wl_region::Event,
+		event: wl_region::Event,
 		_: &(),
 		_: &Connection,
 		_: &QueueHandle<Self>,
 	) {
-		unreachable!("wl_region has no events")
+		unimplemented!("wl_region unknown event: {:?}", event)
 	}
 }

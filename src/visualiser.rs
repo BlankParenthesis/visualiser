@@ -6,6 +6,8 @@ use rustfft::{FftDirection, Fft};
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 
+use crate::CONFIG;
+
 const BUFFER_TARGET: usize = 3;
 
 struct AudioBuffer {
@@ -43,7 +45,6 @@ pub(crate) struct BufferManager {
 	buffers: VecDeque<AudioBuffer>,
 	/// key is the power to raise 2 to for the radix size
 	ffts: HashMap<u8, FftCache>,
-	flip: bool,
 }
 
 struct BufferSlice {
@@ -85,6 +86,8 @@ impl BufferManager {
 		BufferSlice { values, rate }
 	}
 
+	// TODO: would be nice to have constant_q and/or variable_q intervals
+
 	pub fn fft_interval<const T: usize>(
 		&mut self,
 		interval: Duration,
@@ -115,11 +118,15 @@ impl BufferManager {
 		fft.algorithm.process(truncated_data.as_mut_slice());
 
 		// NOTE: taking anything > rate/2 results in Hermitian symmetry
-		const TARGET_MAX_FREQUENCY: f32 = 15_000.0;
-		let frequency_ratio = TARGET_MAX_FREQUENCY / rate;
-		let max_index = usize::min(size, (size as f32 * frequency_ratio) as usize);
+		let max_frequency_ratio = CONFIG.highest_frequency / rate;
+		let min_frequency_ratio = CONFIG.lowest_frequency / rate;
+		let max_index = usize::min(size, (size as f32 * max_frequency_ratio) as usize);
+		let min_index = (size as f32 * min_frequency_ratio) as usize;
 
-		if max_index < 2 {
+		let range = min_index..max_index;
+		let count = range.len();
+
+		if count < 2 {
 			// enterpolation needs at least two values
 			return None;
 		}
@@ -131,11 +138,9 @@ impl BufferManager {
 			[0.0].into_iter().chain(power_data).collect()
 		}
 
-		const SCALE_POWER_BASE: f32 = 1.02;
-
 		Some(Linear::builder()
-			.elements(&truncated_data[0..max_index])
-			.knots(power_range(SCALE_POWER_BASE, max_index).as_ref())
+			.elements(&truncated_data[range])
+			.knots(power_range(CONFIG.frequency_scaling, count).as_ref())
 			//.equidistant::<f32>()
 			//.normalized()
 			.build()
@@ -146,8 +151,7 @@ impl BufferManager {
 				let value = power / fft.scaling_factor;
 				let log_scale = f32::log10(1.0 + value);
 				
-				const SCALE: f32 = 1.0;
-				log_scale * SCALE
+				log_scale * CONFIG.scale
 			})
 			.collect::<Box<_>>()
 			.try_into().unwrap())
