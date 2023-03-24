@@ -74,7 +74,7 @@ impl Window {
 		let xdg_surface = wm_base.get_xdg_surface(base_surface, queue_handle, ());
 		let toplevel = xdg_surface.get_toplevel(queue_handle, ());
 		toplevel.set_title("Visualiser".into());
-		toplevel.set_app_id("wmantle".into());
+		toplevel.set_app_id(env!("CARGO_PKG_NAME").into());
 		
 		let graphics = Graphics::new(&self.display, base_surface, [600, 400]);
 

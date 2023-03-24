@@ -38,7 +38,7 @@ fn stream(
 		mainloop,
 		"audio-capture",
 		properties! {
-			*pipewire::keys::NODE_NAME => "WMantle",
+			*pipewire::keys::NODE_NAME => env!("CARGO_PKG_NAME"),
 			*pipewire::keys::MEDIA_TYPE => "Audio",
 			*pipewire::keys::MEDIA_CATEGORY => "Capture",
 			*pipewire::keys::STREAM_CAPTURE_SINK => "true",
