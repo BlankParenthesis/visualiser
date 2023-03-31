@@ -16,22 +16,21 @@ use clap::Parser;
 
 #[derive(Debug, Parser)]
 struct Arguments {
-	/// Path to the obj file to use for displaying data
-	#[arg(short, long)]
-	layout: Option<PathBuf>, 
 	/// Shift the spectrum to show more detail at the lower frequencies at
 	/// values greater than 1 and higher frequencies at less than 1.
 	#[arg(short, long, default_value_t = 1.02)]
-	frequency_scaling: f32,
+	power_scale_frequencies: f32,
 	/// Clip the spectrum to have this frequency be the highest pitch
 	#[arg(short, long, default_value_t = 15000.0)]
-	highest_frequency: f32,
+	ceiling_frequency: f32,
 	/// Clip the spectrum to have this frequency be the lowest pitch
 	#[arg(short, long, default_value_t = 0.0)]
-	lowest_frequency: f32,
+	floor_frequency: f32,
 	/// Multiply the output levels by the value
 	#[arg(short, long, default_value_t = 1.0)]
 	scale: f32,
+	/// Path to the obj file to use for displaying data
+	layout: Option<PathBuf>, 
 }
 
 lazy_static::lazy_static! {

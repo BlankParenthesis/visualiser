@@ -118,8 +118,8 @@ impl BufferManager {
 		fft.algorithm.process(truncated_data.as_mut_slice());
 
 		// NOTE: taking anything > rate/2 results in Hermitian symmetry
-		let max_frequency_ratio = CONFIG.highest_frequency / rate;
-		let min_frequency_ratio = CONFIG.lowest_frequency / rate;
+		let max_frequency_ratio = CONFIG.ceiling_frequency / rate;
+		let min_frequency_ratio = CONFIG.floor_frequency / rate;
 		let max_index = usize::min(size, (size as f32 * max_frequency_ratio) as usize);
 		let min_index = (size as f32 * min_frequency_ratio) as usize;
 
@@ -140,7 +140,7 @@ impl BufferManager {
 
 		Some(Linear::builder()
 			.elements(&truncated_data[range])
-			.knots(power_range(CONFIG.frequency_scaling, count).as_ref())
+			.knots(power_range(CONFIG.power_scale_frequencies, count).as_ref())
 			//.equidistant::<f32>()
 			//.normalized()
 			.build()
