@@ -262,6 +262,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 [[package]]
 name = "enterpolation"
 version = "0.2.0"
+source = "git+https://github.com/NicolasKlenert/enterpolation/?rev=69ec96fbb150f6b389efab11826e1a9784fb907e#69ec96fbb150f6b389efab11826e1a9784fb907e"
 dependencies = [
  "assert_float_eq",
  "num-traits",
